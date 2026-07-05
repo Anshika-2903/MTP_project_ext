@@ -1,0 +1,29 @@
+#!/bin/bash
+#PBS -N imdb_vsel
+#PBS -P misn.mota2.spons
+#PBS -q standard
+#PBS -l select=1:ncpus=4:ngpus=1
+#PBS -l walltime=03:00:00
+#PBS -o imdb_vsel.out
+#PBS -e imdb_vsel.err
+
+# IMDB with validation-based seed selection (8 seeds). Reports naive mean+-std
+# AND the val-selected test accuracy per backbone. Unique outputs.
+
+cd "$PBS_O_WORKDIR" || exit 1
+echo "[pbs] REACHED-SCRIPT host=$(hostname) job=$PBS_JOBID start=$(date)" > imdb_vsel.log
+source /apps/anaconda3/2025.06/etc/profile.d/conda.sh
+conda activate fgc_comp
+export LD_LIBRARY_PATH="/home/maths/mtech/mt6210961/.conda/envs/fgc_comp/lib:$LD_LIBRARY_PATH"
+echo "[pbs] ENV-READY $(date)" >> imdb_vsel.log
+
+python3 -u run_imdb_valselect.py \
+    --dataset IMDB \
+    --ratio 0.3 \
+    --max_evals 8 \
+    --n_seeds 8 \
+    --iters 120 \
+    --num_epochs 300 \
+    --patience 40 \
+    --out_jsonl hetero_imdb_valselect.jsonl 2>&1 | tee -a imdb_vsel.log
+echo "[pbs] finished=$(date)" >> imdb_vsel.log

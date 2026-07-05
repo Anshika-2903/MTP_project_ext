@@ -1,0 +1,31 @@
+#!/bin/bash
+#PBS -N coarse_v2
+#PBS -P misn.mota2.spons
+#PBS -q standard
+#PBS -l select=1:ncpus=4:ngpus=1
+#PBS -l walltime=14:00:00
+#PBS -o coarse_v2.out
+#PBS -e coarse_v2.err
+
+# v2: unique output filenames (coarse_v2.log / hetero_v2.jsonl) to avoid the
+# filename collision with the earlier (killed/finished) coarse_full runs.
+# Full overnight sweep-and-multiseed, all 3 datasets, all 3 backbones, r=0.3,
+# --objective mean, WITH the Xc L2-normalization fix and the seeded-sweep fix.
+
+cd "$PBS_O_WORKDIR" || exit 1
+source /apps/anaconda3/2025.06/etc/profile.d/conda.sh
+conda activate fgc_comp
+export LD_LIBRARY_PATH="/home/maths/mtech/mt6210961/.conda/envs/fgc_comp/lib:$LD_LIBRARY_PATH"
+
+echo "[pbs] host=$(hostname)  job=$PBS_JOBID  start=$(date)"
+python3 -c "import torch; print('[pbs] cuda:', torch.cuda.is_available(), torch.cuda.get_device_name(0) if torch.cuda.is_available() else '')"
+
+python3 -u run_hetero_full.py \
+    --datasets IMDB ACM DBLP \
+    --ratio 0.3 \
+    --max_evals 20 \
+    --n_seeds 5 \
+    --iters 200 \
+    --objective mean \
+    --out_jsonl hetero_v2.jsonl 2>&1 | tee coarse_v2.log
+echo "[pbs] finished=$(date)"

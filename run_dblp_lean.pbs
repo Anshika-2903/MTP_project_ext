@@ -1,0 +1,33 @@
+#!/bin/bash
+#PBS -N dblp_lean
+#PBS -P misn.mota2.spons
+#PBS -q standard
+#PBS -l select=1:ncpus=4:ngpus=1
+#PBS -l walltime=04:00:00
+#PBS -o dblp_lean.out
+#PBS -e dblp_lean.err
+
+# LEAN DBLP insurance run (same fast recipe that finished ACM in ~6 min):
+# iters 60, obj_seeds 1 (DBLP is stable, no dead-ReLU collapse), max_evals 5,
+# n_seeds 3, 300 epochs + early stop. Unique filenames
+# (dblp_lean.log / hetero_dblp_lean.jsonl). Runs alongside the slower full DBLP
+# job 32944 so a DBLP result is guaranteed well before the deadline.
+
+cd "$PBS_O_WORKDIR" || exit 1
+echo "[pbs] REACHED-SCRIPT host=$(hostname) job=$PBS_JOBID start=$(date)" > dblp_lean.log
+source /apps/anaconda3/2025.06/etc/profile.d/conda.sh
+conda activate fgc_comp
+export LD_LIBRARY_PATH="/home/maths/mtech/mt6210961/.conda/envs/fgc_comp/lib:$LD_LIBRARY_PATH"
+echo "[pbs] ENV-READY $(date)" >> dblp_lean.log
+
+python3 -u run_hetero_fast.py \
+    --datasets DBLP \
+    --ratio 0.3 \
+    --max_evals 5 \
+    --n_seeds 3 \
+    --obj_seeds 1 \
+    --num_epochs 300 \
+    --patience 40 \
+    --iters 60 \
+    --out_jsonl hetero_dblp_lean.jsonl 2>&1 | tee -a dblp_lean.log
+echo "[pbs] finished=$(date)" >> dblp_lean.log

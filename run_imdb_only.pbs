@@ -1,0 +1,32 @@
+#!/bin/bash
+#PBS -N coarse_imdb
+#PBS -P misn.mota2.spons
+#PBS -q standard
+#PBS -l select=1:ncpus=4:ngpus=1
+#PBS -l walltime=13:00:00
+#PBS -o coarse_imdb.out
+#PBS -e coarse_imdb.err
+
+# IMDB-only run. Submitted because job 32932 (running IMDB->ACM->DBLP
+# serially) was put into a system hold (Hold_Types=s) by the scheduler after
+# reaching sweep 9/20 on IMDB, and qrls was Unauthorized (admin-level hold,
+# cannot self-release). This job re-runs IMDB independently in parallel with
+# the new ACM (32943) and DBLP (32944) jobs. Unique output names
+# (coarse_imdb.log / hetero_imdb.jsonl).
+
+cd "$PBS_O_WORKDIR" || exit 1
+echo "[pbs] REACHED-SCRIPT host=$(hostname) job=$PBS_JOBID start=$(date)" > coarse_imdb.log
+source /apps/anaconda3/2025.06/etc/profile.d/conda.sh
+conda activate fgc_comp
+export LD_LIBRARY_PATH="/home/maths/mtech/mt6210961/.conda/envs/fgc_comp/lib:$LD_LIBRARY_PATH"
+echo "[pbs] ENV-READY $(date)" >> coarse_imdb.log
+
+python3 -u run_hetero_full.py \
+    --datasets IMDB \
+    --ratio 0.3 \
+    --max_evals 20 \
+    --n_seeds 5 \
+    --iters 200 \
+    --objective mean \
+    --out_jsonl hetero_imdb.jsonl 2>&1 | tee -a coarse_imdb.log
+echo "[pbs] finished=$(date)" >> coarse_imdb.log

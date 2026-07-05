@@ -1,0 +1,29 @@
+#!/bin/bash
+#PBS -N coarse_v3
+#PBS -P misn.mota2.spons
+#PBS -q standard
+#PBS -l select=1:ncpus=4:ngpus=1
+#PBS -l walltime=13:00:00
+#PBS -o coarse_v3.out
+#PBS -e coarse_v3.err
+
+# v3: fully UNIQUE output names (coarse_v3.* / hetero_v3.jsonl), isolated from
+# any stuck earlier jobs. Full sweep+multiseed, all datasets/backbones, r=0.3,
+# --objective mean, WITH the Xc L2-normalization fix and seeded-sweep fix.
+
+cd "$PBS_O_WORKDIR" || exit 1
+echo "[pbs] REACHED-SCRIPT host=$(hostname) job=$PBS_JOBID start=$(date)" > coarse_v3.log
+source /apps/anaconda3/2025.06/etc/profile.d/conda.sh
+conda activate fgc_comp
+export LD_LIBRARY_PATH="/home/maths/mtech/mt6210961/.conda/envs/fgc_comp/lib:$LD_LIBRARY_PATH"
+echo "[pbs] ENV-READY $(date)" >> coarse_v3.log
+
+python3 -u run_hetero_full.py \
+    --datasets IMDB ACM DBLP \
+    --ratio 0.3 \
+    --max_evals 20 \
+    --n_seeds 5 \
+    --iters 200 \
+    --objective mean \
+    --out_jsonl hetero_v3.jsonl 2>&1 | tee -a coarse_v3.log
+echo "[pbs] finished=$(date)" >> coarse_v3.log

@@ -1,0 +1,17 @@
+#!/bin/bash
+#PBS -N diag2
+#PBS -P misn.mota2.spons
+#PBS -q standard
+#PBS -l select=1:ncpus=4:ngpus=1
+#PBS -l walltime=00:45:00
+#PBS -o diag2.out
+#PBS -e diag2.err
+
+cd "$PBS_O_WORKDIR" || exit 1
+source /apps/anaconda3/2025.06/etc/profile.d/conda.sh
+conda activate fgc_comp
+export LD_LIBRARY_PATH="/home/maths/mtech/mt6210961/.conda/envs/fgc_comp/lib:$LD_LIBRARY_PATH"
+
+echo "[pbs] host=$(hostname)  job=$PBS_JOBID"
+python3 -u diag2_configs.py --dataset IMDB --epochs 500 2>&1 | tee diag2.log
+echo "[pbs] finished."

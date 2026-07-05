@@ -1,0 +1,26 @@
+#!/bin/bash
+#PBS -N befgc_quick
+#PBS -P misn.mota2.spons
+#PBS -q standard
+#PBS -l select=1:ncpus=4:ngpus=1
+#PBS -l walltime=01:00:00
+#PBS -o befgc_quick.out
+#PBS -e befgc_quick.err
+
+# QUICK check: single coarsening config per dataset, all 3 backbones, 1 seed.
+# Purpose: see how ACM/DBLP results look with the AH-UGC-matched training
+# config (lr=0.003, wd=5e-4, 500 epochs) -- fast, no multi-seed std.
+
+cd "$PBS_O_WORKDIR" || exit 1
+source /apps/anaconda3/2025.06/etc/profile.d/conda.sh
+conda activate fgc_comp
+export LD_LIBRARY_PATH="/home/maths/mtech/mt6210961/.conda/envs/fgc_comp/lib:$LD_LIBRARY_PATH"
+
+echo "[pbs] host=$(hostname)  job=$PBS_JOBID"
+( for DS in ACM DBLP; do
+    echo "===== $DS ====="
+    python3 -u main_hetero.py --dataset $DS --ratio 0.3 --iters 200 \
+        --alpha 0.86 --beta 2.53 --gamma 0.0008 --eta 0.058 \
+        --models HeteroSGC HeteroGCN HeteroGCN2
+  done ) 2>&1 | tee quick_check.log
+echo "[pbs] finished."

@@ -1,0 +1,33 @@
+#!/bin/bash
+#PBS -N imdb_fast
+#PBS -P misn.mota2.spons
+#PBS -q standard
+#PBS -l select=1:ncpus=4:ngpus=1
+#PBS -l walltime=04:00:00
+#PBS -o imdb_fast.out
+#PBS -e imdb_fast.err
+
+# Fast IMDB with the seed-ROBUST sweep objective (2-seed mean). This is both the
+# diagnostic and the fix for the HeteroGCN/GCN2 dead-ReLU collapse: configs that
+# collapse on some seeds get a low objective and cannot win. Per-seed accuracies
+# are printed in the multiseed phase so collapse is directly visible.
+# Unique outputs (imdb_fast.log / hetero_imdb_fast.jsonl).
+
+cd "$PBS_O_WORKDIR" || exit 1
+echo "[pbs] REACHED-SCRIPT host=$(hostname) job=$PBS_JOBID start=$(date)" > imdb_fast.log
+source /apps/anaconda3/2025.06/etc/profile.d/conda.sh
+conda activate fgc_comp
+export LD_LIBRARY_PATH="/home/maths/mtech/mt6210961/.conda/envs/fgc_comp/lib:$LD_LIBRARY_PATH"
+echo "[pbs] ENV-READY $(date)" >> imdb_fast.log
+
+python3 -u run_hetero_fast.py \
+    --datasets IMDB \
+    --ratio 0.3 \
+    --max_evals 10 \
+    --n_seeds 5 \
+    --obj_seeds 2 \
+    --num_epochs 300 \
+    --patience 40 \
+    --iters 200 \
+    --out_jsonl hetero_imdb_fast.jsonl 2>&1 | tee -a imdb_fast.log
+echo "[pbs] finished=$(date)" >> imdb_fast.log
