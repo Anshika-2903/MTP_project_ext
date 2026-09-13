@@ -299,9 +299,38 @@ clustering afterward.
 | GCN  | 21.49 ± 1.66 | 20.86 ± 2.58 |
 | GCN2 | 21.19 ± 1.97 | 20.28 ± 3.27 |
 
-GCN/GCN2 clearly outperform SGC on clustering quality too, consistent with
-the node-classification pattern where SGC also lagged on IMDB. ACM/DBLP
-running.
+**ACM** (5 seeds, He-init):
+
+| Backbone | NMI | ARI |
+|---|---:|---:|
+| SGC  | 59.81 ± 4.90 | 62.02 ± 6.27 |
+| GCN  | 69.12 ± 3.27 | 71.15 ± 5.85 |
+| GCN2 | 69.79 ± 3.85 | 72.35 ± 6.92 |
+
+**DBLP** (5 seeds, He-init):
+
+| Backbone | NMI | ARI |
+|---|---:|---:|
+| SGC  | 7.82 ± 6.95 | 3.80 ± 2.30 |
+| GCN  | 34.91 ± 5.73 | 27.50 ± 5.30 |
+| GCN2 | 33.55 ± 6.19 | 27.29 ± 4.79 |
+
+**Findings:**
+- GCN/GCN2 clearly outperform SGC on clustering quality on **all three**
+  datasets — the gap is dramatic on DBLP (NMI 7.8 vs ~34, a 4-5x difference)
+  and IMDB, moderate on ACM.
+- **ACM produces by far the cleanest clusters** (NMI ~60-70%) — consistent
+  with ACM3025 being a well-separated 3-class task in the literature.
+- **Interesting reversal on DBLP**: SGC is the *best* backbone for node
+  CLASSIFICATION on DBLP (91.99%, beating GCN's 83.01% — see §1), but by far
+  the *worst* for clustering quality (NMI 7.82 vs GCN's 34.91). This means
+  SGC's embeddings on DBLP separate classes well enough for a supervised
+  linear decision boundary (classification) but do NOT form natural,
+  well-separated clusters in embedding space (unsupervised k-means) — a
+  genuinely interesting distinction between "linearly separable" and
+  "cluster-separable" representations that's worth a sentence in the
+  write-up. GCN/GCN2 give more "clusterable" embeddings across the board,
+  even on datasets where SGC wins on raw classification accuracy.
 
 ## 5. New models / tasks — not yet started
 - Homogeneous-coarsening-on-heterograph baseline (4.2)
