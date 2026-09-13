@@ -111,10 +111,24 @@ def build_from_hetero_data(data, type_order, target_type):
 
 # ---------------------------------------------------------------- IMDB --------
 def _fix_imdb_directories(root="./data/IMDB"):
+    """One-time raw/processed layout fix + forced reprocess (PyG's IMDB loader
+    otherwise picks up a stale/wrong processed/data.pt on first run).
+
+    Guarded to run ONLY when the raw files aren't already in place: this
+    function used to unconditionally move files and delete data.pt on EVERY
+    call, which is safe for a single sequential run but races when multiple
+    jobs load IMDB from the same (possibly shared/symlinked) data dir at the
+    same time -- one process's os.remove(data.pt) can hit a file another
+    process just deleted or is mid-write on. Once the raw files are in place,
+    later calls (including from concurrent jobs) are a no-op and IMDB() just
+    reuses the cached processed/data.pt.
+    """
     processed_dir, raw_dir = os.path.join(root, "processed"), os.path.join(root, "raw")
-    os.makedirs(raw_dir, exist_ok=True)
     raw_files = ["adjM.npz", "features_0.npz", "features_1.npz", "features_2.npz",
                  "labels.npy", "node_types.npy", "train_val_test_idx.npz"]
+    if all(os.path.exists(os.path.join(raw_dir, f)) for f in raw_files):
+        return  # already fixed by an earlier run -- do nothing, avoid the race
+    os.makedirs(raw_dir, exist_ok=True)
     if os.path.exists(processed_dir):
         for f in os.listdir(processed_dir):
             if f in raw_files:
